@@ -33,10 +33,12 @@ while [ $i -le $max_i ]; do
 	$m4 -D_PUBLIC_PATH=$public "$q_dir/item.m4" "$src/sys.m4" "$template/comment.m4" \
 		 "$template/content.m4" "$template/page.html" > "$q_dir/index.html"
 	sqlite3 $db "DELETE FROM attachments WHERE article_id = $i;"
-	body=$(find "$public/$q_url/attachments" -type f -exec file --mime-type {} \; \
-		| sed "s|$public/$q_url/attachments/||g;s/^/($i, '/g;s/: /', '/g;s/$/'),/g")
-	if [ -n "$body" ]; then
-		sqlite3 $db "INSERT INTO attachments (article_id, file_name, mime_type) VALUES ${body%?};"
+	if [ -d "$public/$q_url/attachments" ]; then
+		body=$(find "$public/$q_url/attachments" -type f -exec file --mime-type {} \; \
+			| sed "s|$public/$q_url/attachments/||g;s/^/($i, '/g;s/: /', '/g;s/$/'),/g")
+		if [ -n "$body" ]; then
+			sqlite3 $db "INSERT INTO attachments (article_id, file_name, mime_type) VALUES ${body%?};"
+		fi
 	fi
 	$gzip "$q_dir/index.html"
 	$gzip "$q_dir/content.md"
