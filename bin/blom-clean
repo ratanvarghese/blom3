@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# vim : set filetype=sh
+
+if [ -z "$1" ]; then
+	echo "Error: no directory provided. Exiting..."
+	exit 64
+fi
+
+blomdir=$(realpath $1)
+public="$blomdir/public"
+
+find $public -maxdepth 2 -path "$public/feeds/*" -exec rm -f {} \;
+find $public -maxdepth 2 -name "index.*" -exec rm -f {} \;
+find $public -maxdepth 2 -name "content.*" -exec rm -f {} \;
+find $public -maxdepth 2 -name "item.m4" -exec rm -f {} \;
+
+rm -f $public/REDIRECT.map
