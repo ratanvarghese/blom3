@@ -77,4 +77,4 @@ $gzip "$public/feeds/rss"
 $gzip "$public/feeds/atom"
 
 rm $init_script
-find public -name item.m4 -exec rm {} \;
+find $public -name item.m4 -exec rm {} \;
