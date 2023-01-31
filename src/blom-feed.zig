@@ -133,7 +133,7 @@ fn rssFeedEntry(channel: ?*mxmlc.mxml_node_t, json_item: jsfItem, allocator: any
     const js_date = try std.cstr.addNullByte(allocator, json_item.date_published);
     defer allocator.free(js_date);
     var time_split: timec.tm = undefined;
-    const tp_result = timec.strptime(js_date, "%Y-%m-%dT%H:%M:%S", &time_split);
+    const tp_result = timec.strptime(@ptrCast([*c]const u8, js_date), "%Y-%m-%dT%H:%M:%S", &time_split);
     if (tp_result == null) {
         std.debug.print("Error parsing date: {s}\n", .{js_date});
         return error.TimeParseError;

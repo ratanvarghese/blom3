@@ -105,7 +105,7 @@ const parameters = struct {
     }
 
     fn getContent(self: parameters, mtime: *i64, ctime: *i64, md_allocator: std.mem.Allocator) ![]u8 {
-        const md_file = try std.fs.cwd().openFile((self.md_file orelse unreachable), .{ .read = true });
+        const md_file = try std.fs.cwd().openFile((self.md_file orelse unreachable), .{});
         defer md_file.close();
         const md_stat = try md_file.stat();
         mtime.* = @intCast(i64, @divFloor(md_stat.mtime, 1_000_000_000));
