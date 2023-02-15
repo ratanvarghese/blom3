@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# vim : set filetype=sh
+
+if [ -z "$1" ]; then
+	echo "Error: no directory provided. Exiting..."
+	exit 64
+fi
+
+
+if [ -z "$2" ]; then
+	echo "Error: no article provided. Exiting..."
+	exit 64
+fi
+
+scp "$1/blom.db" blog:~/blog/blom.db
+scp -r "$1/public/$2/" blog:~/blog/public/
