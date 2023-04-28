@@ -14,8 +14,8 @@ CREATE TABLE articles(
 	class TEXT,
 	CHECK(url = TRIM(LOWER(url))),
 	CHECK(title = TRIM(title)),
-	CHECK(date_modified = STRFTIME("%Y-%m-%dT%H:%M:%f", date_modified)),
-	CHECK(date_published = STRFTIME("%Y-%m-%dT%H:%M:%f", date_published)),
+	CHECK(date_modified = STRFTIME('%Y-%m-%dT%H:%M:%f', date_modified)),
+	CHECK(date_published = STRFTIME('%Y-%m-%dT%H:%M:%f', date_published)),
 	CHECK(UNIXEPOCH(date_published) <= UNIXEPOCH(date_modified))
 ) STRICT;
 CREATE TABLE attachments(
