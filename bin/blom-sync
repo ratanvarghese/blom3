@@ -13,4 +13,10 @@ if [ -z "$2" ]; then
 fi
 
 scp "$1/blom.db" blog:~/blog/blom.db
-scp -r "$1/public/$2/" blog:~/blog/public/
+
+for article in "$@"; do
+	if [ "$article" != "$1" ]
+	then
+		scp -r "$1/public/$article/" blog:~/blog/public/
+	fi
+done
