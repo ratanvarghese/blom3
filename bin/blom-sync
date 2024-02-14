@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 # vim : set filetype=sh
 
+# run as ssh-agent -t 300 /bin/blom-sync
+ssh-add "$HOME/.ssh/axdev"
+
 if [ -z "$1" ]; then
 	echo "Error: no directory provided. Exiting..."
 	exit 64
