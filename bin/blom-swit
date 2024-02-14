@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+# vim : set filetype=sh
+
+if [ -z "$1" ]; then
+	echo "Error: no directory provided. Exiting..."
+	exit 64
+fi
+
+if [ -z "$2" ]; then
+	echo "Error: no article provided. Exiting..."
+	exit 64
+fi
+
+if [ -z "$3" ]; then
+	echo "Error: no title provided. Exiting..."
+	exit 64
+fi
+
+if [ -z "$4" ]; then
+	echo "Error: no thumbnail provided. Exiting..."
+	exit 64
+fi
+
+blomdir=$(realpath $1)
+article=$(realpath $2)
+title="$3"
+thumbnail=$(realpath $4)
+url=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed 's/^/j-/')
+zbin="$blomdir/bin"
+db="$blomdir/blom.db"
+attachdir="$blomdir/public/$url/attachments"
+
+tmparticle=$(mktemp)
+cat "$article" | sed 's/[“”]/"/g' | sed "s/’/'/g" | sed 's/…/.../g' > "$tmparticle"
+"$zbin/blom-article" -c swit -d $db -g creative -g joy-of-writing -m "$tmparticle" \
+	-t "$title" -u "$url"
+rm "$tmparticle"
+
+mkdir -p "$attachdir"
+cp "$thumbnail" "$attachdir/thumbnail.svg"

@@ -20,3 +20,7 @@ for article in "$@"; do
 		scp -r "$1/public/$article/" blog:~/blog/public/
 	fi
 done
+
+ssh blog '~/blog/bin/blom-update ~/blog'
+ssh -t blog 'sudo systemctl restart nginx'
+ssh blog 'systemctl status nginx'
