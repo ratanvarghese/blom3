@@ -21,6 +21,7 @@ m4 -D_PUBLIC_PATH=$public "$template/param.sql" > $init_script
 sqlite3="sqlite3 -readonly $db -init $init_script"
 m4="m4 -D_TQ_PATH=$zbin/blom-tqdate"
 gzip="gzip -k --best --force"
+markdown="markdown -f dldiscount"
 
 $sqlite3 < "$src/content.sql" > /dev/null
 
@@ -29,7 +30,7 @@ i=1
 while [ $i -le $max_i ]; do
 	q_url=$($sqlite3 "SELECT url FROM articles WHERE id = $i;")
 	q_dir="$public/$q_url"
-	sed -E 's|^(#+) (.+)|\1 [\2](id:\2)|g' "$q_dir/content.md" | markdown > "$q_dir/content.html"
+	sed -E 's|^(#+) (.+)|\1 [\2](id:\2)|g' "$q_dir/content.md" | $markdown > "$q_dir/content.html"
 	$m4 -D_PUBLIC_PATH=$public "$q_dir/item.m4" "$src/sys.m4" "$template/comment.m4" \
 		 "$template/content.m4" "$template/page.html" > "$q_dir/index.html"
 	sqlite3 $db "DELETE FROM attachments WHERE article_id = $i;"
@@ -52,12 +53,12 @@ $m4 -D_PUBLIC_PATH=$public "$q_dir/item.m4" "$src/sys.m4" "$template/main_commen
 $gzip "$public/index.html"
 
 $sqlite3 < "$src/archive.sql" | "$zbin/blom-archive" > "$public/archive/content.md"
-markdown -o "$public/archive/content.html" "$public/archive/content.md"
+$markdown -o "$public/archive/content.html" "$public/archive/content.md"
 $m4 -D_CONTENT_PATH="$public/archive/content.html" -D_TITLE=Archive \
 	"$src/metasys.m4" "$template/page.html" > "$public/archive/index.html"
 $gzip "$public/archive/index.html"
 
-$sqlite3 < "$src/tags.sql" | markdown -o "$public/tags/content.html"
+$sqlite3 < "$src/tags.sql" | $markdown -o "$public/tags/content.html"
 $m4 -D_CONTENT_PATH="$public/tags/content.html" -D_TITLE=Tags \
 	"$src/metasys.m4" "$template/page.html" > "$public/tags/index.html"
 $gzip "$public/tags/index.html"
