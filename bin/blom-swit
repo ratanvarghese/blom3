@@ -25,13 +25,20 @@ blomdir=$(realpath $1)
 article=$(realpath $2)
 title="$3"
 thumbnail=$(realpath $4)
+minutes="$5"
+thumbnail_alt="$6"
 url=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed 's/^/j-/')
 zbin="$blomdir/bin"
 db="$blomdir/blom.db"
 attachdir="$blomdir/public/$url/attachments"
+thumbnail_md="![$thumbnail_alt](/$url/attachments/thumbnail.svg) [Image credit: Twitter Twemoji](class:credit)
+"
+templatedir="$blomdir/template"
 
 tmparticle=$(mktemp)
-cat "$article" | sed 's/[“”]/"/g' | sed "s/’/'/g" | sed 's/…/.../g' > "$tmparticle"
+m4 -D_THUMBNAIL_ALT="$thumbnail_alt" -D_URL="$url" -D_SWIT_CONTENT="$article" \
+	-D_SWIT_MINUTES="$minutes" "$templatedir/swit.m4" \
+	| sed -f "$templatedir/asciify.txt" > "$tmparticle"
 "$zbin/blom-article" -c swit -d $db -g creative -g joy-of-writing -m "$tmparticle" \
 	-t "$title" -u "$url"
 rm "$tmparticle"
