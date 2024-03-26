@@ -11,21 +11,23 @@ if [ -z "$1" ]; then
 	exit 64
 fi
 
-if [ -z "$2" ]; then
-	echo "Error: no article provided. Exiting..."
-	exit 64
-fi
-
-
 ssh-add "$HOME/.ssh/axdev"
+
+min_id=$(ssh blog 'sqlite3 ~/blog/blom.db "SELECT MAX(id) FROM articles;"')
+max_id=$(sqlite3 "$1/blom.db" "SELECT MAX(id) FROM articles;")
+
+if [ "$min_id" == "$max_id" ]; then
+	echo "No new articles. Exiting..."
+	exit 0
+fi
 
 scp "$1/blom.db" blog:~/blog/blom.db
 
-for article in "$@"; do
-	if [ "$article" != "$1" ]
-	then
-		scp -r "$1/public/$article/" blog:~/blog/public/
-	fi
+id=$(($min_id + 1))
+while [ $id -le $max_id ]; do
+	url=$(sqlite3 "$1/blom.db" "SELECT url FROM articles WHERE id=$id;")
+	scp -r "$1/public/$url/" blog:~/blog/public/
+	id=$(( id + 1 ))
 done
 
 ssh blog '~/blog/bin/blom-update ~/blog'
