@@ -3,7 +3,7 @@ const mon13c = @cImport({
     @cInclude("mon13.h");
 });
 
-const JsfItem = struct { url: []u8, title: []u8, date_published: []u8 };
+const JsfItem = struct { url: []u8, title: []u8, date_published: []u8, id: u32 };
 
 fn line_to_mjd(line: []const u8) !i32 {
     var mjd: i32 = 0;
@@ -110,8 +110,8 @@ pub fn main() !void {
             item.title,
             item.url,
             "r3n.me",
-            items.len - i,
-            items.len - i,
+            item.id,
+            item.id,
         });
 
         mjd1 = mjd2;

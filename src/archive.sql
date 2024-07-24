@@ -3,7 +3,8 @@ SELECT
     json_object(
         'url', url,
         'title', title,
-        'date_published', date_published
+        'date_published', date_published,
+        'id', id
     ) || CASE WHEN id = 1 THEN '' ELSE ',' END
 FROM articles
 ORDER BY id DESC;

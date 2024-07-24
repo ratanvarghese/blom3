@@ -29,21 +29,23 @@ max_i=$($sqlite3 "SELECT MAX(id) FROM articles;")
 i=1
 while [ $i -le $max_i ]; do
 	q_url=$($sqlite3 "SELECT url FROM articles WHERE id = $i;")
-	q_dir="$public/$q_url"
-	sed -E 's|^(#+) (.+)|\1 [\2](id:\2)|g' "$q_dir/content.md" | $markdown > "$q_dir/content.html"
-	$m4 -D_PUBLIC_PATH=$public "$q_dir/item.m4" "$src/sys.m4" "$template/comment.m4" \
-		 "$template/content.m4" "$template/page.html" > "$q_dir/index.html"
-	sqlite3 $db "DELETE FROM attachments WHERE article_id = $i;"
-	if [ -d "$public/$q_url/attachments" ]; then
-		body=$(find "$public/$q_url/attachments" -type f -exec file --mime-type {} \; \
-			| sed "s|$public/$q_url/attachments/||g;s/^/($i, '/g;s/: /', '/g;s/$/'),/g")
-		if [ -n "$body" ]; then
-			sqlite3 $db "INSERT INTO attachments (article_id, file_name, mime_type) VALUES ${body%?};"
+	if [ -n "$q_url" ]; then
+		q_dir="$public/$q_url"
+		sed -E 's|^(#+) (.+)|\1 [\2](id:\2)|g' "$q_dir/content.md" | $markdown > "$q_dir/content.html"
+		$m4 -D_PUBLIC_PATH=$public "$q_dir/item.m4" "$src/sys.m4" "$template/comment.m4" \
+			 "$template/content.m4" "$template/page.html" > "$q_dir/index.html"
+		sqlite3 $db "DELETE FROM attachments WHERE article_id = $i;"
+		if [ -d "$public/$q_url/attachments" ]; then
+			body=$(find "$public/$q_url/attachments" -type f -exec file --mime-type {} \; \
+				| sed "s|$public/$q_url/attachments/||g;s/^/($i, '/g;s/: /', '/g;s/$/'),/g")
+			if [ -n "$body" ]; then
+				sqlite3 $db "INSERT INTO attachments (article_id, file_name, mime_type) VALUES ${body%?};"
+			fi
 		fi
+		$gzip "$q_dir/index.html"
+		$gzip "$q_dir/content.md"
+		$gzip "$q_dir/content.html"
 	fi
-	$gzip "$q_dir/index.html"
-	$gzip "$q_dir/content.md"
-	$gzip "$q_dir/content.html"
 	i=$(( i + 1 ))
 done
 q_url=$($sqlite3 "SELECT url FROM articles WHERE id = $max_i;")

@@ -16,9 +16,14 @@ ssh-add "$HOME/.ssh/axdev"
 min_id=$(ssh blog 'sqlite3 ~/blog/blom.db "SELECT MAX(id) FROM articles;"')
 max_id=$(sqlite3 "$1/blom.db" "SELECT MAX(id) FROM articles;")
 
-if [ "$min_id" == "$max_id" ]; then
-	echo "No new articles. Exiting..."
-	exit 0
+remote_count=$(ssh blog 'sqlite3 ~/blog/blom.db "SELECT COUNT(id) FROM articles;"')
+local_count=$(sqlite3 "$1/blom.db" "SELECT COUNT(id) FROM articles;")
+
+if [ "$remote_count" == "$local_count" ]; then
+	if [ "$min_id" == "$max_id" ]; then
+		echo "No new articles. Exiting..."
+		exit 0
+	fi
 fi
 
 scp "$1/blom.db" blog:~/blog/blom.db
@@ -26,7 +31,9 @@ scp "$1/blom.db" blog:~/blog/blom.db
 id=$(($min_id + 1))
 while [ $id -le $max_id ]; do
 	url=$(sqlite3 "$1/blom.db" "SELECT url FROM articles WHERE id=$id;")
-	scp -r "$1/public/$url/" blog:~/blog/public/
+	if [ -n "$url" ]; then
+		scp -r "$1/public/$url/" blog:~/blog/public/
+	fi
 	id=$(( id + 1 ))
 done
 
