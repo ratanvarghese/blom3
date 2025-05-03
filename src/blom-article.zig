@@ -18,7 +18,7 @@ pub fn int64_callback(
         const col_texts = col_texts_opt orelse return 0;
         var i: usize = 0;
         while (i < col_count) : (i += 1) {
-            var result = @ptrCast(*i64, @alignCast(@alignOf(i64), result_opaque));
+            const result = @as(*i64, @ptrCast(@alignCast(result_opaque)));
             if (col_texts[i]) |cell| {
                 result.* = std.fmt.parseInt(i64, std.mem.sliceTo(cell, 0), 10) catch 0;
             }
@@ -29,7 +29,7 @@ pub fn int64_callback(
 }
 
 fn bind_text(db: *sqlite3c.sqlite3, stmt: ?*sqlite3c.sqlite3_stmt, param: c_int, x: []const u8) !void {
-    if (sqlite3c.sqlite3_bind_text(stmt, param, @ptrCast([*c]const u8, x), @intCast(c_int, x.len), null) != 0) {
+    if (sqlite3c.sqlite3_bind_text(stmt, param, @ptrCast(x), @intCast(x.len), null) != 0) {
         std.debug.print("{s}\n", .{sqlite3c.sqlite3_errmsg(db)});
         return error.DatabaseBindError;
     }
@@ -62,7 +62,7 @@ fn selectInt64(db: *sqlite3c.sqlite3, default: i64, query: []const u8) !i64 {
 
 fn selectExists(db: *sqlite3c.sqlite3, text: []const u8, query: []const u8) !bool {
     var stmt: ?*sqlite3c.sqlite3_stmt = null;
-    if (sqlite3c.sqlite3_prepare_v2(db, query.ptr, @intCast(c_int, query.len), &stmt, null) != 0) {
+    if (sqlite3c.sqlite3_prepare_v2(db, query.ptr, @intCast(query.len), &stmt, null) != 0) {
         std.debug.print("{s}\n", .{sqlite3c.sqlite3_errmsg(db)});
         return error.DatabasePrepareError;
     }
@@ -108,9 +108,9 @@ const parameters = struct {
         const md_file = try std.fs.cwd().openFile((self.md_file orelse unreachable), .{});
         defer md_file.close();
         const md_stat = try md_file.stat();
-        mtime.* = @intCast(i64, @divFloor(md_stat.mtime, 1_000_000_000));
-        ctime.* = @intCast(i64, @divFloor(md_stat.ctime, 1_000_000_000));
-        var md_buffer = try md_allocator.alloc(u8, md_stat.size);
+        mtime.* = @intCast(@divFloor(md_stat.mtime, 1_000_000_000));
+        ctime.* = @intCast(@divFloor(md_stat.ctime, 1_000_000_000));
+        const md_buffer = try md_allocator.alloc(u8, md_stat.size);
         _ = try md_file.readAll(md_buffer);
         return md_buffer;
     }
@@ -141,7 +141,7 @@ const parameters = struct {
         var mtime: i64 = 0;
         var ctime: i64 = 0;
         const md_allocator = std.heap.page_allocator; //suitable for an entire article.
-        var md_buffer = try self.getContent(&mtime, &ctime, md_allocator);
+        const md_buffer = try self.getContent(&mtime, &ctime, md_allocator);
         defer md_allocator.free(md_buffer);
 
         try bind_int64(db, stmt, 1, new_id);
@@ -225,7 +225,7 @@ const parameters = struct {
         var mtime: i64 = 0;
         var ctime: i64 = 0;
         const md_allocator = std.heap.page_allocator; //suitable for an entire article.
-        var md_buffer = try self.getContent(&mtime, &ctime, md_allocator);
+        const md_buffer = try self.getContent(&mtime, &ctime, md_allocator);
         defer md_allocator.free(md_buffer);
 
         try bind_text(db, stmt, 1, md_buffer);
@@ -361,7 +361,7 @@ fn getParameters() !parameters {
         std.debug.print("No database file specified.\n", .{});
         return error.NoDatabaseFileSpecified;
     };
-    std.mem.copy(?[]const u8, result.tags[0..], g[0..]);
+    std.mem.copyForwards(?[]const u8, result.tags[0..], g[0..]);
     result.tag_count = g_count;
     result.md_file = m;
     result.published = p;
@@ -377,7 +377,7 @@ pub fn main() !void {
     const params = try getParameters();
 
     var db_opt: ?*sqlite3c.sqlite3 = null;
-    const open_error = sqlite3c.sqlite3_open(@ptrCast([*:0]const u8, params.db_file), &db_opt);
+    const open_error = sqlite3c.sqlite3_open(@ptrCast(params.db_file), &db_opt);
     defer _ = sqlite3c.sqlite3_close(db_opt);
     const db = db_opt orelse {
         return error.DatabaseOpenError;

@@ -68,25 +68,25 @@ fn whitespaceCallback(raw_node: ?*mxmlc.mxml_node_t, where: c_int) callconv(.C) 
 }
 
 fn addTextNode(parent: ?*mxmlc.mxml_node_t, name: []const u8, content: []u8, allocator: anytype) !?*mxmlc.mxml_node_t {
-    var el = mxmlc.mxmlNewElement(parent, @ptrCast(*const u8, name));
+    const el = mxmlc.mxmlNewElement(parent, @ptrCast(name));
 
     // const memory = try std.cstr.addNullByte(allocator, content);
     // defer allocator.free(memory);
     // _ = mxmlc.mxmlNewText(el, 0, @ptrCast(*u8, memory));
 
     var start_idx: usize = 0;
-    for (content) |c, i| {
+    for (content, 0..) |c, i| {
         if (c == '\n') {
-            const line = try std.cstr.addNullByte(allocator, content[start_idx..i]);
-            _ = mxmlc.mxmlNewText(el, 0, @ptrCast(*const u8, line));
-            _ = mxmlc.mxmlNewText(el, 0, @ptrCast(*const u8, newline_repl));
+            const line = try std.fmt.allocPrintZ(allocator, "{s}", .{content[start_idx..i]});
+            _ = mxmlc.mxmlNewText(el, 0, @ptrCast(line));
+            _ = mxmlc.mxmlNewText(el, 0, @ptrCast(newline_repl));
             allocator.free(line);
             start_idx = i + 1;
         }
     }
     if (start_idx < content.len) {
-        const line = try std.cstr.addNullByte(allocator, content[start_idx..]);
-        _ = mxmlc.mxmlNewText(el, 0, @ptrCast(*const u8, line));
+        const line = try std.fmt.allocPrintZ(allocator, "{s}", .{content[start_idx..]});
+        _ = mxmlc.mxmlNewText(el, 0, @ptrCast(line));
         allocator.free(line);
     }
 
@@ -94,33 +94,34 @@ fn addTextNode(parent: ?*mxmlc.mxml_node_t, name: []const u8, content: []u8, all
 }
 
 fn atomFeedEntry(atom_feed: ?*mxmlc.mxml_node_t, json_item: jsfItem, allocator: anytype) !void {
-    var entry = mxmlc.mxmlNewElement(atom_feed, "entry");
+    const entry = mxmlc.mxmlNewElement(atom_feed, "entry");
 
     _ = try addTextNode(entry, "title", json_item.title, allocator);
     _ = try addTextNode(entry, "updated", json_item.date_modified, allocator);
-    var id = try addTextNode(entry, "id", json_item.id, allocator);
-    var content = try addTextNode(entry, "content", json_item.content_html, allocator);
+    const id = try addTextNode(entry, "id", json_item.id, allocator);
+    const content = try addTextNode(entry, "content", json_item.content_html, allocator);
     mxmlc.mxmlElementSetAttr(content, "type", "html");
 
-    var link = try addTextNode(entry, "link", "", allocator);
+    const link = try addTextNode(entry, "link", "", allocator);
     mxmlc.mxmlElementSetAttr(link, "href", mxmlc.mxmlGetText(id, null));
 }
 
 fn atomFeedHead(xml: ?*mxmlc.mxml_node_t, json_feed: jsfMain, allocator: anytype) !void {
-    var atom_feed = mxmlc.mxmlNewElement(xml, "feed");
+    const atom_feed = mxmlc.mxmlNewElement(xml, "feed");
     mxmlc.mxmlElementSetAttr(atom_feed, "xmlns", "http://www.w3.org/2005/Atom");
 
     const time_sec = timec.time(null);
     const time_split = timec.localtime(&time_sec);
     const memory = try allocator.alloc(u8, 30);
     defer allocator.free(memory);
-    _ = timec.strftime(@ptrCast(*u8, memory), memory.len, "%Y-%m-%dT%H:%M:%S-04:00", time_split);
+    _ = timec.strftime(@ptrCast(memory), memory.len, "%Y-%m-%dT%H:%M:%S-04:00", time_split);
 
     _ = try addTextNode(atom_feed, "title", json_feed.title, allocator);
     _ = try addTextNode(atom_feed, "id", json_feed.home_page_url, allocator);
     _ = try addTextNode(atom_feed, "updated", memory, allocator);
-    var link = try addTextNode(atom_feed, "link", "", allocator);
-    mxmlc.mxmlElementSetAttr(link, "href", @ptrCast(*u8, json_feed.home_page_url));
+    const link = try addTextNode(atom_feed, "link", "", allocator);
+    const link_href = try std.fmt.allocPrintZ(allocator, "{s}", .{json_feed.home_page_url});
+    mxmlc.mxmlElementSetAttr(link, "href", link_href);
 
     for (json_feed.items) |json_item| {
         try atomFeedEntry(atom_feed, json_item, allocator);
@@ -128,19 +129,19 @@ fn atomFeedHead(xml: ?*mxmlc.mxml_node_t, json_feed: jsfMain, allocator: anytype
 }
 
 fn rssFeedEntry(channel: ?*mxmlc.mxml_node_t, json_item: jsfItem, allocator: anytype) !void {
-    var item = mxmlc.mxmlNewElement(channel, "item");
+    const item = mxmlc.mxmlNewElement(channel, "item");
 
-    const js_date = try std.cstr.addNullByte(allocator, json_item.date_published);
+    const js_date = try std.fmt.allocPrintZ(allocator, "{s}", .{json_item.date_published});
     defer allocator.free(js_date);
     var time_split: timec.tm = undefined;
-    const tp_result = timec.strptime(@ptrCast([*c]const u8, js_date), "%Y-%m-%dT%H:%M:%S", &time_split);
+    const tp_result = timec.strptime(@ptrCast(js_date), "%Y-%m-%dT%H:%M:%S", &time_split);
     if (tp_result == null) {
         std.debug.print("Error parsing date: {s}\n", .{js_date});
         return error.TimeParseError;
     }
     const memory = try allocator.alloc(u8, 50);
     defer allocator.free(memory);
-    const tf_result = timec.strftime(@ptrCast(*u8, memory), memory.len, "%a, %d %b %Y %H:%M:%S -04:00", &time_split);
+    const tf_result = timec.strftime(@ptrCast(memory), memory.len, "%a, %d %b %Y %H:%M:%S -04:00", &time_split);
     if (tf_result == 0) {
         return error.TimeFormatError;
     }
@@ -153,16 +154,16 @@ fn rssFeedEntry(channel: ?*mxmlc.mxml_node_t, json_item: jsfItem, allocator: any
 }
 
 fn rssFeedHead(xml: ?*mxmlc.mxml_node_t, json_feed: jsfMain, allocator: anytype) !void {
-    var rss_feed = mxmlc.mxmlNewElement(xml, "rss");
+    const rss_feed = mxmlc.mxmlNewElement(xml, "rss");
     mxmlc.mxmlElementSetAttr(rss_feed, "version", "2.0");
 
-    var channel = mxmlc.mxmlNewElement(rss_feed, "channel");
+    const channel = mxmlc.mxmlNewElement(rss_feed, "channel");
 
     const time_sec = timec.time(null);
     const time_split = timec.localtime(&time_sec);
     const memory = try allocator.alloc(u8, 50);
     defer allocator.free(memory);
-    _ = timec.strftime(@ptrCast(*u8, memory), memory.len, "%a, %d %b %Y %H:%M:%S -04:00", time_split);
+    _ = timec.strftime(@ptrCast(memory), memory.len, "%a, %d %b %Y %H:%M:%S -04:00", time_split);
 
     _ = try addTextNode(channel, "title", json_feed.title, allocator);
     _ = try addTextNode(channel, "link", json_feed.home_page_url, allocator);
@@ -182,9 +183,7 @@ pub fn main() !void {
     const stdin = std.io.getStdIn().reader();
 
     const input = try stdin.readAllAlloc(allocator, 100000000);
-    var stream = std.json.TokenStream.init(input[0..]);
-    const jsonFeed = try std.json.parse(jsfMain, &stream, .{
-        .allocator = allocator,
+    const jsonFeed = try std.json.parseFromSliceLeaky(jsfMain, allocator, input[0..], .{
         .ignore_unknown_fields = true,
     });
 

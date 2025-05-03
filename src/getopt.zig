@@ -1,10 +1,9 @@
-// zig-getopt by dmgk from https://github.com/dmgk/zig-getopt/
-//
+// zig-getopt by dmgk (https://github.com/dmgk/zig-getopt)
 // Copyright (c) 2021 Dmitri Goutnik
-//
+
 // Permission to use, copy, modify, and/or distribute this software for any
 // purpose with or without fee is hereby granted.
-//
+
 // THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
 // REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
 // AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
@@ -19,7 +18,7 @@ const mem = std.mem;
 const os = std.os;
 const expect = std.testing.expect;
 
-///Parsed option struct.
+/// Parsed option struct.
 pub const Option = struct {
     /// Option character.
     opt: u8,
@@ -53,7 +52,7 @@ pub const OptionsIterator = struct {
             return null;
         }
 
-        if (arg[0] != '-' or !ascii.isAlNum(arg[1]))
+        if (arg[0] != '-' or !ascii.isAlphanumeric(arg[1]))
             return null;
 
         self.optopt = arg[self.optpos];
@@ -174,15 +173,9 @@ test "with args separate" {
     };
 
     const expected = [_]Option{
-        .{
-            .opt = 'a',
-            .arg = "10",
-        },
+        .{ .opt = 'a', .arg = "10" },
         .{ .opt = 'b' },
-        .{
-            .opt = 'c',
-            .arg = "42",
-        },
+        .{ .opt = 'c', .arg = "42" },
     };
 
     var opts = getoptArgv(&argv, "a:bc:");
@@ -207,15 +200,9 @@ test "with args joined" {
     };
 
     const expected = [_]Option{
-        .{
-            .opt = 'a',
-            .arg = "10",
-        },
+        .{ .opt = 'a', .arg = "10" },
         .{ .opt = 'b' },
-        .{
-            .opt = 'c',
-            .arg = "42",
-        },
+        .{ .opt = 'c', .arg = "42" },
     };
 
     var opts = getoptArgv(&argv, "a:bc:");
@@ -243,7 +230,7 @@ test "invalid option" {
     try expect((try opts.next()).?.opt == 'a');
 
     const maybe_opt = opts.next();
-    if (maybe_opt) {
+    if (maybe_opt) |_| {
         unreachable;
     } else |err| {
         try expect(err == Error.InvalidOption);
@@ -263,7 +250,7 @@ test "missing argument" {
     try expect((try opts.next()).?.opt == 'a');
 
     const maybe_opt = opts.next();
-    if (maybe_opt) {
+    if (maybe_opt) |_| {
         unreachable;
     } else |err| {
         try expect(err == Error.MissingArgument);
@@ -283,10 +270,7 @@ test "positional args" {
     const expected = [_]Option{
         .{ .opt = 'a' },
         .{ .opt = 'b' },
-        .{
-            .opt = 'c',
-            .arg = "10",
-        },
+        .{ .opt = 'c', .arg = "10" },
         .{ .opt = 'd' },
     };
 
