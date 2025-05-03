@@ -66,7 +66,12 @@ m4 -D_CONTENT_PATH="$public/tags/content.html" -D_TITLE=Tags -D_TODAY_TQ="$today
 	"$src/metasys.m4" "$template/page.html" > "$public/tags/index.html"
 $gzip "$public/tags/index.html"
 
-$sqlite3 < "$src/grid.sql" | m4 "$template/grid.m4" - > "$public/creative/content.html"
+$sqlite3 < "$src/grid.sql" | m4 "$template/grid.m4" - > "$public/featured/content.html"
+m4 -D_CONTENT_PATH="$public/featured/content.html" -D_TITLE=Featured \
+	-D_TODAY_TQ="$today_tq" \
+	"$template/featured.m4" "$template/page.html" > "$public/featured/index.html"
+$gzip "$public/featured/index.html"
+
 m4 -D_CONTENT_PATH="$public/creative/content.html" -D_TITLE=Creative \
 	-D_TODAY_TQ="$today_tq" \
 	"$template/creative.m4" "$template/page.html" > "$public/creative/index.html"

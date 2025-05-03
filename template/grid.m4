@@ -6,7 +6,7 @@ define(`_GRID_COLUMN_END', `</div>')
 define(`_GRID_NAME', `<h2>$1</h2>')
 define(`_GRID_BOX',`
 	ifelse($#, 3,
-	<a class="creative-box $1" href="$2">
+	<a class="creative-box no-label $1" href="$2">
 		<img src="$3" />
 	</a>,
 	<a class="creative-box $1" href="$2">
