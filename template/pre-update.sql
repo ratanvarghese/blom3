@@ -33,5 +33,6 @@ WHERE href IN (
 	'/animorphs-font',
 	'/predictions-for-avatar',
 	'/dumbphone',
-	'/creator-movie'
+	'/creator-movie',
+	'/j-saunter'
 );
