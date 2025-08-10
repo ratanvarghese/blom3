@@ -6,6 +6,7 @@
 -- relationship with a Gregorian day of year, even February 29.
 -- We can use this characteristic to make a lookup table Gregorian and Tranquility days.
 
+
 CREATE TABLE tq_months(
    id INTEGER NOT NULL PRIMARY KEY,
    name TEXT NOT NULL UNIQUE
